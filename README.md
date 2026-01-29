@@ -1,4 +1,4 @@
-A simple statusbar for Claude showing current directory, git status and context usage
+A simple statusline for Claude showing current directory, git status and context usage
 
 ![Claude screenshot](./claude.png)
 

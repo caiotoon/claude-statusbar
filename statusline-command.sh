@@ -4,7 +4,7 @@
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
-BLUE='\033[34m'
+BLUE='\033[38;2;122;162;247m'
 MAGENTA='\033[35m'
 CYAN='\033[36m'
 ORANGE='\033[38;5;208m'
@@ -15,10 +15,8 @@ eval "$(jq -r '
     @sh "cwd=\(.workspace.current_dir)",
     @sh "model=\(.model.display_name)",
     @sh "used_pct=\(.context_window.used_percentage // "")",
-    @sh "total_input=\(.context_window.total_input_tokens // "")",
-    @sh "total_output=\(.context_window.total_output_tokens // "")",
     @sh "context_size=\(.context_window.context_window_size // "")"
-' < /dev/stdin)"
+' </dev/stdin)"
 
 # Replace home directory with ~
 display_path="${cwd/#$HOME/~}"
@@ -30,7 +28,7 @@ cd "$cwd" 2>/dev/null || cwd="$HOME"
 output="${BLUE} ${display_path}${RESET}"
 
 # Git information (if in a git repository)
-if git rev-parse --git-dir > /dev/null 2>&1; then
+if git rev-parse --git-dir >/dev/null 2>&1; then
     # Get current branch name
     branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
 
@@ -95,13 +93,13 @@ if [ -n "$used_pct" ]; then
         ctx_color=$RED
     fi
 
-    # Format token count (k for thousands)
-    if [ -n "$total_input" ] && [ "$total_input" != "null" ] && [ -n "$context_size" ] && [ "$context_size" != "null" ]; then
-        total_tokens=$((total_input + total_output))
-        if [ "$total_tokens" -ge 1000 ]; then
-            tokens_display="$((total_tokens / 1000))k"
+    # Calculate tokens from percentage
+    if [ -n "$context_size" ] && [ "$context_size" != "null" ]; then
+        tokens_used=$(awk "BEGIN {printf \"%.0f\", ($used_pct / 100) * $context_size}")
+        if [ "$tokens_used" -ge 1000 ]; then
+            tokens_display="$((tokens_used / 1000))k"
         else
-            tokens_display="${total_tokens}"
+            tokens_display="${tokens_used}"
         fi
         if [ "$context_size" -ge 1000 ]; then
             context_display="$((context_size / 1000))k"
